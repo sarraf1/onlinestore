@@ -32,14 +32,15 @@ public class DatabaseConnection {
 
 		 // 2. Test functions for each query
 		print_all();
+		
 
 		}
 
 		public static void print_all() throws SQLException
 		{
-		 conn = DriverManager.getConnection(strConn,strUsername,strPassword);
+		 /*conn = DriverManager.getConnection(strConn,strUsername,strPassword);
 		 Statement stmt = conn.createStatement();
-		 ResultSet rs = stmt.executeQuery ("SELECT * FROM Inventory");
+		 ResultSet rs = stmt.executeQuery ("SELECT * FROM Catalog");
 		 System.out.println("result:");
 		 while(rs.next())
 		 {	 
@@ -56,8 +57,100 @@ public class DatabaseConnection {
 		 }
 		 rs.close();
 		 stmt.close();
+		 conn.close();*/
+			
+		//TEST FUNCTIONS!!!!
+			
+			
+		//searchStockNum("AA00000");
+		//searchCategory("phone");
+		searchModel("a01");
+		
+		}
+		
+		
+		public static void searchStockNum(String stockNum) throws SQLException
+		{
+			conn = DriverManager.getConnection(strConn,strUsername,strPassword);
+			 Statement stmt = conn.createStatement();
+			 ResultSet rs = stmt.executeQuery ("SELECT * FROM Catalog WHERE stockNum='" + stockNum + "'");
+			 System.out.println("result:");
+			 while(rs.next())
+			 {	 
+				 System.out.print("Stock Number: ");
+				 System.out.print(rs.getString(1) + " ");
+				 System.out.print("Category: ");
+				 System.out.print(rs.getString(2) + " ");
+				 System.out.print("Manufacturer: ");
+				 System.out.print(rs.getString(3) + " ");
+				 System.out.print("Model#: ");
+				 System.out.print(rs.getString(4) + " ");
+				 System.out.print("Price: ");
+				 System.out.print(rs.getFloat(5) + " ");
+				 System.out.print("Warranty Years: ");
+				 System.out.println(rs.getInt(6) + " ");
+
+				 
+			 }
+			 rs.close();
+			 stmt.close();
+			 conn.close();
+		}
+		
+		public static void searchCategory(String category) throws SQLException
+		{
+			conn = DriverManager.getConnection(strConn,strUsername,strPassword);
+			 Statement stmt = conn.createStatement();
+			 ResultSet rs = stmt.executeQuery ("SELECT * FROM Catalog WHERE category='" + category + "'");
+			 System.out.println("result:");
+			 while(rs.next())
+			 {	 
+				 System.out.print("Stock Number: ");
+				 System.out.print(rs.getString(1) + " ");
+				 System.out.print("Category: ");
+				 System.out.print(rs.getString(2) + " ");
+				 System.out.print("Manufacturer: ");
+				 System.out.print(rs.getString(3) + " ");
+				 System.out.print("Model#: ");
+				 System.out.print(rs.getString(4) + " ");
+				 System.out.print("Price: ");
+				 System.out.print(rs.getFloat(5) + " ");
+				 System.out.print("Warranty Years: ");
+				 System.out.println(rs.getInt(6) + " ");
+
+				 
+			 }
+			 rs.close();
+			 stmt.close();
+			 conn.close();
 		}
 	
-	
+		public static void searchModel(String model) throws SQLException
+		{
+			conn = DriverManager.getConnection(strConn,strUsername,strPassword);
+			 Statement stmt = conn.createStatement();
+			 ResultSet rs = stmt.executeQuery ("SELECT * FROM Catalog WHERE modelNum='" + model + "'");
+			 System.out.println("result:");
+			 while(rs.next())
+			 {	 
+				 System.out.print("Stock Number: ");
+				 System.out.print(rs.getString(1) + " ");
+				 System.out.print("Category: ");
+				 System.out.print(rs.getString(2) + " ");
+				 System.out.print("Manufacturer: ");
+				 System.out.print(rs.getString(3) + " ");
+				 System.out.print("Model#: ");
+				 System.out.print(rs.getString(4) + " ");
+				 System.out.print("Price: ");
+				 System.out.print(rs.getFloat(5) + " ");
+				 System.out.print("Warranty Years: ");
+				 System.out.println(rs.getInt(6) + " ");
+
+				 
+			 }
+			 rs.close();
+			 stmt.close();
+			 conn.close();
+		}
 
 }
