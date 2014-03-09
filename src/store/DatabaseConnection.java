@@ -93,6 +93,7 @@ public class DatabaseConnection {
 				System.out.println("2. View Cart");
 				System.out.println("3. Add to cart");
 				System.out.println("4. Remove from cart");
+				System.out.println("5. Checkout");
 				System.out.println("");
 				System.out.print("Choice: ");
 
@@ -110,6 +111,8 @@ public class DatabaseConnection {
 	            	case 3: addCart(cID);
 	            			break;
 	            	case 4: removeCart(cID);
+	            			break;
+	            	case 5: checkout(cID);
 	            			break;
 	            
 	            	default: break;
@@ -443,8 +446,9 @@ public class DatabaseConnection {
 			}
 			
 			String updateCartSQL;
+			double tprice=price*quantity;
+
 			if(oldquantity > 0){ 
-				double tprice=price*quantity;
 				System.out.println("TPrice: " + tprice);
 				updateCartSQL = "UPDATE Cart SET quantity=" + quantity + ", tprice=" + tprice + " WHERE cID='" + cID + "' AND stockNum='" + stockNum + "'";
 				System.out.println("Updating quantity and tprice of item!");
@@ -475,7 +479,7 @@ public class DatabaseConnection {
 				p.setString(1, cID);
 				p.setString(2, stockNum);
 				p.setInt(3, quantity);
-				p.setDouble(4, price);
+				p.setDouble(4, tprice);
 				p.executeUpdate();	
 				p.close();
 				conn.close();
@@ -555,6 +559,8 @@ public class DatabaseConnection {
 			
 			}
 		public static void viewCart(String cID) throws SQLException {
+			double subtotal=0;
+			double cost=0;
 			conn = DriverManager.getConnection(strConn,strUsername,strPassword);
 			Statement s = conn.createStatement();
 			System.out.println("Stock Num	Quantity	Cost");
@@ -564,12 +570,116 @@ public class DatabaseConnection {
 				 //System.out.print(rs.getString(1) + "	");
 				 System.out.print(rs.getString(2) + "		");
 				 System.out.print(rs.getInt(3) + "	");
-				 System.out.println(rs.getDouble(4));
-				 
+				 cost=rs.getDouble(4);
+				 System.out.println(cost);
+				 subtotal+=cost;
 			 }
+			System.out.println("Subtotal: "+subtotal);
 			System.out.println("");
 			 rs.close();
 			 s.close();
 			 conn.close();
+		}
+		public static void checkout(String cID) throws SQLException {
+			double subtotal=0;
+			double discount=0;
+			double shipping=0;
+			double totalcost=0;
+			String status=null;
+			conn = DriverManager.getConnection(strConn,strUsername,strPassword);
+			Statement s = conn.createStatement();
+			
+			//Get subtotal
+			//TODO: Add to orders table???
+			ResultSet rs = s.executeQuery("SELECT * FROM Cart WHERE cID ='" + cID + "'");
+			while(rs.next())
+			 {	 
+				subtotal+=rs.getDouble(4);			 
+			 }
+			System.out.println("Subtotal: "+subtotal);
+			
+			//Get customer status and discount + shipping
+			status=getStatus(cID);
+			System.out.println("Customer has status: " + status);
+			discount=getDiscount(status, subtotal);
+			System.out.println("Status Discount: -" + discount);
+			shipping=getShipping(subtotal);
+			System.out.println("Shipping Cost: +" + shipping);
+			
+			//Calculate total cost
+			totalcost=subtotal-discount+shipping;
+			System.out.println("Total Cost: " + totalcost);
+			
+			//Remove from cart
+			//Add to orders table (gotta create)
+			//Update customer number of purchases, purchase (0, 1, 2), and status
+			//Add to history
+			
+			System.out.println("");
+			 rs.close();
+			 s.close();
+			 conn.close();
+		}
+		public static String getStatus(String cID) throws SQLException {
+			int numP=-1;
+			String status=null;
+			conn = DriverManager.getConnection(strConn,strUsername,strPassword);
+			Statement s = conn.createStatement();
+			
+			ResultSet rs = s.executeQuery("SELECT * FROM Customers WHERE cID ='" + cID + "'");
+			if(rs.next()){
+				status = rs.getString("status");
+				numP = rs.getInt("numP");
+				if(numP == 0)
+				{
+					System.out.println("NEW CUSTOMER! Gets gold discount on first purchase");
+				}
+			}
+			else
+			{
+				System.out.println("SOMETHING WENT WRONG!!!!!");
+			}
+			rs.close();
+			s.close();
+			conn.close();
+			return status;
+		}
+
+		public static double getDiscount(String status, Double subtotal)throws SQLException {
+			double discount=0;
+			conn = DriverManager.getConnection(strConn,strUsername,strPassword);
+			Statement s = conn.createStatement();
+			
+			ResultSet rs = s.executeQuery("SELECT * FROM Discount WHERE status ='" + status + "'");
+			if(rs.next()){
+				discount = rs.getDouble("percent");
+			}
+			rs.close();
+			s.close();
+			conn.close();
+			return (discount*subtotal);
+			
+		}
+		public static double getShipping(Double subtotal) throws SQLException{
+			double minShipping=99999;
+			double percent=0;
+			conn = DriverManager.getConnection(strConn,strUsername,strPassword);
+			Statement s = conn.createStatement();
+			ResultSet rs = s.executeQuery("SELECT * FROM Discount WHERE status ='Shipping'");
+			if(rs.next()){
+				minShipping = rs.getDouble("min");
+				System.out.println("Minimum subtotal needed to waive shipping: " + minShipping);
+				percent = rs.getDouble("percent");
+				System.out.println("S&H Percent: " + percent);
+			}
+			if(subtotal>minShipping){
+				return 0;
+			}
+			else{
+				return (subtotal*percent);
+			}
+		}
+		public static void updateCustomer(String cID, Double purchase)throws SQLException {
+			
 		}
 }
