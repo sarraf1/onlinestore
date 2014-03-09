@@ -210,9 +210,18 @@ public class DatabaseConnection {
 			// query inventory where quan < min && same manufacturer if count >=3 send replenishment order for all same manu quan < max
 		}
 		
+		public static void cartMenu() throws SQLException
+		{
+			System.out.println("Customer Menu");
+			System.out.println("1. Search");
+			System.out.println("2. View Cart");
+			System.out.println("3. Add to cart");
+			System.out.println("4. Remove from cart");
+		}
+		
 		public static void search() throws SQLException
 		{
-			System.out.println("TIME TO SEARCH");
+			System.out.println("Time to search");
 			String stockNum=null;
 			String category=null;
 			String manufacturer=null;
@@ -369,13 +378,20 @@ public class DatabaseConnection {
 		public static void addCart(String cID, String stockNum, int quantity) throws SQLException
 		{
 			int oldquantity = getCartQuantity(cID, stockNum);
-			double price = getPrice(stockNum);
-			System.out.println("old quantity: " + oldquantity);
 			if(oldquantity != -1){
 				quantity += oldquantity;
 			}	
-			String updateCartSQL = "";
-			if(oldquantity >= 0){ 
+			
+			double price = getPrice(stockNum);
+			if(price == -1)
+			{
+				System.out.println("Item does not exist in catalog!");
+				return;
+			}
+			
+			System.out.println("old quantity: " + oldquantity);
+			String updateCartSQL;
+			if(oldquantity > 0){ 
 				updateCartSQL = "UPDATE Cart SET quantity = ?, tprice = ? WHERE cID = ? AND stockNum = ?";
 				System.out.println("Updating quantity and tprice of item!");
 				conn = DriverManager.getConnection(strConn,strUsername,strPassword);
@@ -384,10 +400,10 @@ public class DatabaseConnection {
 				p.setDouble(2, price*quantity);
 				p.setString(3, cID);
 				p.setString(4, stockNum);
-				
 				p.executeUpdate();
-				
 				p.close();
+				conn.close();
+				System.out.println("Added to Cart");
 			}
 			else {
 				updateCartSQL = "INSERT INTO Cart(cID, stockNum, quantity, tprice) VALUES (?, ?, ?, ?)";
@@ -398,14 +414,82 @@ public class DatabaseConnection {
 				p.setString(2, stockNum);
 				p.setInt(3, quantity);
 				p.setDouble(4, price);
-				
-				p.executeUpdate();
-				
+				p.executeUpdate();	
 				p.close();
+				conn.close();
+				System.out.println("Added to Cart");
 			}
+			}
+			public static void removeCart(String cID, String stockNum, int quantity) throws SQLException
+			{
+				int oldquantity = getCartQuantity(cID, stockNum);
+				if(oldquantity == -1)
+				{
+					System.out.println("Item doesn't exist in cart!");
+					return;
+				}
+				
+				double price = getPrice(stockNum);
+				if(price == -1)
+				{
+					System.out.println("Item does not exist in catalog!");
+					return;
+				}
+				
+				System.out.println("old quantity: " + oldquantity);
+				if(oldquantity != -1){
+					quantity -= oldquantity;
+				}	
+				
+				String updateCartSQL;
+				if(quantity > 0){ 
+					updateCartSQL = "UPDATE Cart SET quantity = ?, tprice = ? WHERE cID = ? AND stockNum = ?";
+					System.out.println("Updating quantity and tprice of item!");
+					conn = DriverManager.getConnection(strConn,strUsername,strPassword);
+					PreparedStatement p = conn.prepareStatement(updateCartSQL);
+					p.setInt(1, quantity);
+					p.setDouble(2, price*quantity);
+					p.setString(3, cID);
+					p.setString(4, stockNum);
+					
+					p.executeUpdate();
+					
+					p.close();
+					conn.close();
+					System.out.println("Added to Cart");
+				}
+				else {
+					updateCartSQL = "DELETE FROM Cart WHERE cID=? AND stockNum=?";
+					System.out.println("Removing item from cart!");
+					conn = DriverManager.getConnection(strConn,strUsername,strPassword);
+					PreparedStatement p = conn.prepareStatement(updateCartSQL);
+					p.setString(1, cID);
+					p.setString(2, stockNum);
+					
+					p.executeUpdate();
+					
+					p.close();
+					conn.close();
+					System.out.println("Added to Cart");
+				}
+				
 			
-			
-			conn.close();
-			System.out.println("Added to Cart");
+			}
+		public static void viewCart(String cID) throws SQLException {
+			conn = DriverManager.getConnection(strConn,strUsername,strPassword);
+			Statement s = conn.createStatement();
+			System.out.println("Stock Num	Quantity	Cost");
+			ResultSet rs = s.executeQuery("SELECT * FROM Cart WHERE cID ='" + cID + "'");
+			while(rs.next())
+			 {	 //System.out.print(i + ": ");
+				 //System.out.print(rs.getString(1) + "	");
+				 System.out.print(rs.getString(2) + "	");
+				 System.out.print(rs.getInt(3) + "	");
+				 System.out.print(rs.getDouble(4));
+				 
+			 }
+			 rs.close();
+			 s.close();
+			 conn.close();
 		}
 }
