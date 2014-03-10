@@ -7,6 +7,7 @@ import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.sql.Statement;
+import java.text.DateFormatSymbols;
 import java.util.Calendar;
 import java.util.Scanner;
 
@@ -82,7 +83,6 @@ public class DatabaseConnection {
 		public static void custMenu(String cID) throws SQLException
 		{
 			int choice;
-			
 
 			while(true){
 				choice=-1;
@@ -585,16 +585,33 @@ public class DatabaseConnection {
 			double discount=0;
 			double shipping=0;
 			double totalcost=0;
+			
+			//Temp values to fill history table
+			String stockNum;
+			int quantity;
+			double tprice;
+			
 			String status=null;
 			conn = DriverManager.getConnection(strConn,strUsername,strPassword);
 			Statement s = conn.createStatement();
 			
+			int orderNum=getNewOrderNum();
+			String mydate=getDate();
+			
+			
 			//Get subtotal
-			//TODO: Add to orders table???
 			ResultSet rs = s.executeQuery("SELECT * FROM Cart WHERE cID ='" + cID + "'");
 			while(rs.next())
 			 {	 
-				subtotal+=rs.getDouble(4);			 
+				stockNum=rs.getString(2);
+				quantity=rs.getInt(3);
+				tprice=rs.getInt(4);
+				//TODO: Check availability before checkout in addCart???
+				System.out.println("eDepot: Check availability of product " + stockNum + " with quantity " + quantity);
+				PreparedStatement p = conn.prepareStatement("INSERT INTO History VALUES(" + orderNum +", '"+ cID +"', '"+ mydate + "', '" + stockNum + "', " + quantity + ", " + tprice +")");
+				p.executeUpdate();
+				p.close();
+				subtotal+=tprice; 
 			 }
 			System.out.println("Subtotal: "+subtotal);
 			
@@ -611,10 +628,13 @@ public class DatabaseConnection {
 			System.out.println("Total Cost: " + totalcost);
 			
 			//Remove from cart
-			//Add to orders table (gotta create)
-			//Update customer number of purchases, purchase (0, 1, 2), and status
-			//Add to history
+			PreparedStatement removeCart = conn.prepareStatement("DELETE Cart WHERE cID='" + cID + "'");
+			removeCart.executeUpdate();
+			removeCart.close();
 			
+			//Update customer number of purchases, purchase (0, 1, 2), and status
+			//TODO: SHOULD PRICES FOR STATUS BE DETERMINED FROM SUBTOTAL OR TOTAL COST?
+
 			System.out.println("");
 			 rs.close();
 			 s.close();
@@ -672,6 +692,8 @@ public class DatabaseConnection {
 				percent = rs.getDouble("percent");
 				System.out.println("S&H Percent: " + percent);
 			}
+			rs.close();
+			s.close();
 			if(subtotal>minShipping){
 				return 0;
 			}
@@ -679,7 +701,45 @@ public class DatabaseConnection {
 				return (subtotal*percent);
 			}
 		}
+		public static int getNewOrderNum() throws SQLException
+		{
+			int orderNum=99999;
+			conn = DriverManager.getConnection(strConn,strUsername,strPassword);
+			Statement s = conn.createStatement();
+			ResultSet rs = s.executeQuery("SELECT value FROM Defined WHERE type ='orderNum'");
+			if(rs.next()){
+				orderNum=rs.getInt(1);
+				System.out.println("Order number: " + orderNum);
+				PreparedStatement p = conn.prepareStatement("UPDATE Defined SET value=value+1 WHERE type='orderNum'");
+				p.executeUpdate();
+				p.close();
+			}
+			else{
+				System.out.println("ERROR: Something went wrong");
+			}
+			rs.close();
+			s.close();
+			return orderNum;
+		}
+		
+		//Updates customer purchases and status
 		public static void updateCustomer(String cID, Double purchase)throws SQLException {
 			
+		}
+		
+		public static String getDate() {
+			Calendar calendar = Calendar.getInstance();
+			int monthNum = calendar.get(Calendar.MONTH);
+			String month = null; 
+			DateFormatSymbols arrayOfMonths = new DateFormatSymbols(); 
+			String[] months = arrayOfMonths.getMonths(); 
+			if (monthNum >= 0 && monthNum <= 11 ) { 
+				month = months[monthNum]; 
+			} 
+			
+			int day = calendar.get(Calendar.DAY_OF_MONTH);
+			int year = calendar.get(Calendar.YEAR);
+			String myString = day + "-" + month + "-" + year;
+			return myString;
 		}
 }
