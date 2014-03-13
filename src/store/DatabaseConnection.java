@@ -41,88 +41,134 @@ public class DatabaseConnection
 
 	}
 
-	public static void print_all() throws SQLException
-	{
-	 /*conn = DriverManager.getConnection(strConn,strUsername,strPassword);
-	 Statement stmt = conn.createStatement();
-	 ResultSet rs = stmt.executeQuery ("SELECT * FROM Catalog");
-	 System.out.println("result:");
-	 while(rs.next())
-	 {	 
-		 System.out.print(rs.getString(1) + " ");
-		 System.out.print(rs.getString(2) + " ");
-		 System.out.println(rs.getString(3));
+	 public static void print_all() throws SQLException
+     {
+     	int choice = -1;
 
-		 // Get the value from column "columnName" with integer type
-		 //System.out.println(rs.getInt("getString"));
-		 // Get the value from column "columnName" with float type
-		 //System.out.println(rs.getFloat("columnName"));
-		 // Get the value from the third column with string type
-		 //System.out.println(rs.getString(3));
-	 }
-	 rs.close();
-	 stmt.close();
-	 conn.close();*/
-		
-	//TEST FUNCTIONS!!!!
-		
-	
+         while(choice == -1)
+         {
+                 
 
-	//searchStockNum("AA00000");
-	//searchCategory("phone");
-	//searchModel("a01");
-	//searchDescription("ram", "2gb");
-	//searchAccessory("AA00000");
-	//searchManufacturerAndPrice("Verizon", 11.0);
-	//searchPriceAndWarranty(11.0, 1);
-	//searchStockNumAndCategoryAndModelNum("AA00001", "phone", "a02");
-	//search();
-	//custMenu("sarrafGUY");
-	//deleteOld();
-	search();
-	}
-		
-	public static void custMenu(String cID) throws SQLException
-	{
-		int choice;
+                 System.out.println("Start Menu");
+                 System.out.println("0. eDepot");
+                 System.out.println("1. eMart");
+                 System.out.println("");
+                 System.out.print("Choice: ");
 
-		while(true)
-		{
-			choice=-1;
+                 //Read values
+                 choice=reader.nextInt();
+                 reader.nextLine(); //Get rid of unread new line
+         }
+         if(choice == 0)
+         	transactionMenu();
+         else
+         	login();
 
-			System.out.println("Customer Menu");
-			System.out.println("0. Exit");
-			System.out.println("1. Search");
-			System.out.println("2. View Cart");
-			System.out.println("3. Add to cart");
-			System.out.println("4. Remove from cart");
-			System.out.println("5. Checkout");
-			System.out.println("");
-			System.out.print("Choice: ");
-
-			//Read values
-			choice=reader.nextInt();
-			reader.nextLine(); //Get rid of unread new line
-
-			switch (choice) 
+     }
+	 public static void printTable() throws SQLException
+	 {
+		 System.out.print("Which table to print? (Inventory or History): ");
+		 String choice=reader.nextLine();
+		 
+	 	conn = DriverManager.getConnection(strConn,strUsername,strPassword);
+		Statement stmt = conn.createStatement();
+		ResultSet rs = stmt.executeQuery("SELECT * FROM " + choice);
+		if(choice.equals("Inventory")){
+			System.out.println("Stocknum    Manufacturer       Modelnum        Quantity  Min  Max  Location         Replenishment");
+			while(rs.next())
 			{
-				case 0: reader.close();
-						return;
-				case 1:	search();
-						break;
-				case 2:	viewCart(cID);
-						break;
-				case 3: addCart(cID);
-						break;
-				case 4: removeCart(cID);
-						break;
-				case 5: checkout(cID);
-						break;
-			
-				default: break;
+				System.out.print(rs.getString(1) + " ");
+				System.out.print(rs.getString(2) + " ");
+				System.out.print(rs.getString(3) + " ");
+				System.out.print(rs.getInt(4) + "    ");
+				System.out.print(rs.getInt(5) + "   ");
+				System.out.print(rs.getInt(6) + "   ");
+				System.out.print(rs.getString(7) + " ");
+				System.out.println(rs.getInt(8));
 			}
 		}
-	}
+		else if(choice.equals("History"))
+		{
+			System.out.println("OrderNum    CID         StockNum    Quantity   Total");
+			while(rs.next())
+			{
+				System.out.print(rs.getInt(1) + "   ");
+				System.out.print(rs.getString(2) + " ");
+				System.out.print(rs.getString(3) + " ");
+				System.out.print(rs.getInt(4) + "    ");
+				System.out.println(rs.getDouble(5));
+			}
+		}
+
+	 }
+	 public static void custMenu(String cID, int manager) throws SQLException
+     {
+             int choice;
+             
+             while(true)
+             {
+                     choice=-1;
+
+                     System.out.println("Customer Menu");
+                     System.out.println("0. Exit");
+                     System.out.println("1. Search");
+                     System.out.println("2. View Cart");
+                     System.out.println("3. Add to cart");
+                     System.out.println("4. Remove from cart");
+                     System.out.println("5. Checkout");
+                     System.out.println("");
+                     if (manager == 1)
+                     {
+                     	System.out.println("Manager Menu");
+                         System.out.println("6. Print Monthly Summary");
+                         System.out.println("7. Status Adjustment");
+                         System.out.println("8. Send Order");
+                         System.out.println("9. Change Price");
+                         System.out.println("10. Delete Old Records");
+                         System.out.println("11. Print Inventory/History");
+                         System.out.println("");
+                     }
+                     
+                     System.out.print("Choice: ");
+
+                     //Read values
+                     choice=reader.nextInt();
+                     reader.nextLine(); //Get rid of unread new line
+                     
+                     if(choice > 5 && manager == 0)
+                     	choice = -1;
+
+                     switch (choice)
+                     {
+                             case 0: reader.close();
+                                             return;
+                             case 1: search();
+                                             break;
+                             case 2: viewCart(cID);
+                                             break;
+                             case 3: addCart(cID);
+                                             break;
+                             case 4: removeCart(cID);
+                                             break;
+                             case 5: checkout(cID);
+                                             break;
+                             case 6: printSummary();
+                             				break;
+                             case 7: changeStatus();
+                             				break;
+                             case 8: sendOrder();
+                             				break;
+                             case 9: changePrice();
+                             				break;
+                             case 10: deleteOld();
+                             				break;
+                             case 11: printTable();
+                             				break;
+
+                             default: break;
+                     }
+             }
+     }
 	
 	public static void transactionMenu() throws SQLException
 	{
@@ -345,20 +391,21 @@ public class DatabaseConnection
 		conn.close();
 	}	
 	
-	public static void checkQuantity(String stockNum) throws SQLException
+	public static int checkQuantity(String stockNum) throws SQLException
 	{
 		if(stockNum.length() > 7)
 		{
 			System.out.println("ERROR: length of stockNum must be 7");
-			return;
+			return 0;
 		}
 		
 		conn = DriverManager.getConnection(strConn,strUsername,strPassword);
 		Statement stmt = conn.createStatement();
 		ResultSet rs = stmt.executeQuery ("SELECT quantity FROM Inventory WHERE stockNum = '" + stockNum + "'");
-		
+		int quantity=0;
 		if(rs.next())
 		{
+			quantity=rs.getInt(1);
 			System.out.println("stockNum " + stockNum + " has quantity: " + rs.getInt(1));
 		}
 		else
@@ -368,18 +415,19 @@ public class DatabaseConnection
 		rs.close();
 		stmt.close();
 		conn.close();
+		return quantity;
 	}
 	
 	public static int getSID() throws SQLException
 	{
 		conn = DriverManager.getConnection(strConn,strUsername,strPassword);
 		Statement stmt = conn.createStatement();
-		ResultSet rs = stmt.executeQuery("SELECT value FROM Defined WHERE type = 'SID'");
+		ResultSet rs = stmt.executeQuery("SELECT value FROM Defined WHERE type = 'sid'");
 		if(rs.next())
 		{
 			int result = rs.getInt(1);
 			stmt = conn.createStatement();
-			stmt.executeUpdate("UPDATE Defined SET value = value + 1 WHERE type = 'SID'");
+			stmt.executeUpdate("UPDATE Defined SET value = value + 1 WHERE type = 'sid'");
 			return result;
 		}
 		else
@@ -443,9 +491,13 @@ public class DatabaseConnection
 			while(rs3.next())
 			{	
 				int quantity = rs3.getInt(3) - rs3.getInt(4) - rs3.getInt(2);
-				String modelNum = rs3.getString(1);
-				processShippingNotice(SID, "Replenishment!", manufacturer, modelNum, quantity);
-				System.out.println("Sent replenishment order for man: " + manufacturer + " mod: " + modelNum);
+				if(quantity <= 0)
+					System.out.println("Item " + manufacturer + "," + rs3.getString(1) + " has replenishment already ordered");
+				else{
+					String modelNum = rs3.getString(1);
+					processShippingNotice(SID, "Replenishment!", manufacturer, modelNum, quantity);
+					System.out.println("Sent replenishment order for man: " + manufacturer + " mod: " + modelNum);
+				}
 			}
 			rs3.close();
 		}
@@ -663,7 +715,11 @@ public class DatabaseConnection
 		}	
 		
 		//Check eDepot for quantity
-		checkQuantity(stockNum);
+		int available=checkQuantity(stockNum);
+		if(quantity > available){
+			System.out.println("Not enough available!");
+			return;
+		}
 		
 		double price = getPrice(stockNum);
 		System.out.println("Price: " + price);
@@ -892,11 +948,7 @@ public class DatabaseConnection
 		ResultSet rs = s.executeQuery("SELECT * FROM Customers WHERE cID ='" + cID + "'");
 		if(rs.next()){
 			status = rs.getString("status");
-			numP = rs.getInt("numP");
-			if(numP == 0)
-			{
-				System.out.println("NEW CUSTOMER! ");
-			}
+			System.out.println("Customer status: " + status);
 		}
 		else
 		{
@@ -991,7 +1043,7 @@ public class DatabaseConnection
 		}
 		status=getNewStatus(total);
 		s=conn.createStatement();
-		s.executeUpdate("UPDATE Customer SET status='" + status + "' WHERE cID='" + cID + "'");
+		s.executeUpdate("UPDATE Customers SET status='" + status + "' WHERE cID='" + cID + "'");
 		
 		/*
 		
@@ -1057,7 +1109,6 @@ public class DatabaseConnection
 		while(rs2.next()){
 			statusCheck=rs2.getString("status");
 			statusCheck=statusCheck.trim();
-			System.out.println("DEBUG: Current status is " + statusCheck);
 			if(statusCheck.equals("Gold")){
 				goldMin=rs2.getDouble("min");
 				//goldMax=rs2.getDouble("max");
@@ -1205,10 +1256,12 @@ public class DatabaseConnection
 		
 		//Get best customer
 		stmt = conn.createStatement();
-		ResultSet rs5 = stmt.executeQuery("WITH mytable AS (select distinct cID,SUM(total) as totalSum FROM Total WHERE dop >= TO_TIMESTAMP('" + year + "-" + month + "-01 00:00:00','yyyy-mm-dd hh24:mi:ss') and dop <= TO_TIMESTAMP('" + year + "-" + month + "-" + lastDay + " 23:59:59', 'yyyy-mm-dd hh24:mi:ss') GROUP BY cID) SELECT cID FROM mytable WHERE totalSum=(SELECT MAX(totalSum) from mytable)");
+		ResultSet rs5 = stmt.executeQuery("WITH mytable AS (select distinct Total.cID,SUM(History.quantity) as totalQuantity,SUM(Total.total) as totalSum FROM Total,History WHERE Total.orderNum=History.orderNum AND dop >= TO_TIMESTAMP('" + year + "-" + month + "-01 00:00:00','yyyy-mm-dd hh24:mi:ss') and dop <= TO_TIMESTAMP('" + year + "-" + month + "-" + lastDay + " 23:59:59', 'yyyy-mm-dd hh24:mi:ss') GROUP BY Total.cID) SELECT cID, totalQuantity, totalSum FROM mytable WHERE totalSum=(SELECT MAX(totalSum) from mytable)");
 		if(rs5.next()){
 			String bestCustomer=rs5.getString(1);
-			System.out.println("Customer who purchased most: " + bestCustomer);
+			int totalQuantity=rs5.getInt(2);
+			Double totalPurchase=rs5.getDouble(3);
+			System.out.println("Customer who purchased most: " + bestCustomer + "Total Quantity: " + totalQuantity + "     Total Purchased: " + totalPurchase);
 		}
 		else
 		{
@@ -1236,5 +1289,137 @@ public class DatabaseConnection
 	    }
 	    return -1;
 	}
+	public static void changePrice() throws SQLException
+    {
+    		String choice;
+    		int price;
+        	System.out.println("Enter StockNum of item to change price");
+            System.out.println("");
+            System.out.print("Choice: ");
+
+            //Read values
+            choice=reader.nextLine();
+            
+        	System.out.println("Enter desired price");
+            System.out.println("");
+            System.out.print("Price: ");
+            
+            price=reader.nextInt();
+            
+            conn = DriverManager.getConnection(strConn,strUsername,strPassword);
+            Statement stmt = conn.createStatement();
+            int result = stmt.executeUpdate("UPDATE Catalog SET price =" + price + " WHERE stockNum = '" + choice + "'");
+            if(result == 0)
+            	System.out.println("Item not found.");
+            else
+            	System.out.println("Success!");
+
+            stmt.close();
+            conn.close();
+    }
+	
+	 public static void login() throws SQLException
+     {
+     		int valid = 0;
+             conn = DriverManager.getConnection(strConn,strUsername,strPassword);
+             Statement stmt = conn.createStatement();
+     		while(valid == 0)
+     		{
+	        		String username;
+	        		String password;
+
+		            System.out.print("Username: ");
+		
+		            //Read values
+		            username=reader.nextLine();
+		            
+		            System.out.print("Password: ");
+		            
+		            password=reader.nextLine();
+		            
+		            stmt = conn.createStatement();
+		            ResultSet rs = stmt.executeQuery("Select isManager FROM Customers WHERE cID = '" + username + "' AND password = '" + password + "'");
+	                if(rs.next())
+	                {
+	                	System.out.println("Success!");
+	                	valid = 1;
+	                	int manager = rs.getInt(1);
+	                	custMenu(username, manager);
+	                }
+	                else
+	                	System.out.println("Login failed");
+	                rs.close();
+     		}
+             stmt.close();
+             conn.close();
+     }
+     
+     public static void changeStatus() throws SQLException
+     {
+     		String cID;
+     		String color;
+	        	System.out.println("Enter cID to change his/her status");
+	            System.out.println("");
+	            System.out.print("cID: ");
+	
+	            //Read values
+	            cID=reader.nextLine();
+	            
+	        	System.out.println("Enter desired status (Gold/Green/Silver/New)");
+	            System.out.println("");
+	            System.out.print("Color: ");
+	            
+	            color=reader.nextLine();
+	            
+             conn = DriverManager.getConnection(strConn,strUsername,strPassword);
+             Statement stmt = conn.createStatement();
+             int result = stmt.executeUpdate("UPDATE Customers SET status = '" + color + "' WHERE cID = '" + cID + "'");
+             if(result == 0)
+             	System.out.println("Failed.");
+             else
+             	System.out.println("Success!");
+             
+             stmt.close();
+             conn.close();
+     }
+     
+     public static void sendOrder() throws SQLException
+     {
+     		int choice = 1;
+             int SID = getSID();
+             System.out.println("got sid: " + SID);
+     		while(choice == 1)
+     		{
+     			String name;
+     			String manufacturer;
+     			String modelNum;
+     			int quantity;
+     			
+		            System.out.print("name: ");
+		            //Read values
+		            name=reader.nextLine();
+
+		            System.out.print("manufacturer: ");
+		            //Read values
+		            manufacturer=reader.nextLine();
+		            
+		            System.out.print("modelNum: ");
+		            //Read values
+		            modelNum=reader.nextLine();
+		            
+		            System.out.print("quantity: ");
+		            //Read values
+		            quantity=reader.nextInt();
+		            
+		            processShippingNotice(SID, name, manufacturer, modelNum, quantity);
+		            
+		            System.out.print("add another item to order?? 1 = yes 0 = no: ");
+		            //Read values
+		            choice=reader.nextInt();
+		            reader.nextLine();
+		            
+     		}
+     }
+
 	
 }
