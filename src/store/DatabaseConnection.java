@@ -77,7 +77,8 @@ public class DatabaseConnection
 	//searchPriceAndWarranty(11.0, 1);
 	//searchStockNumAndCategoryAndModelNum("AA00001", "phone", "a02");
 	//search();
-	custMenu("sarrafGUY");
+	//custMenu("sarrafGUY");
+	deleteOld();
 	
 	}
 		
@@ -123,7 +124,7 @@ public class DatabaseConnection
 		}
 	}
 	
-	public static void transactionMenu(String cID) throws SQLException
+	public static void transactionMenu() throws SQLException
 	{
 		int choice;
 
@@ -412,7 +413,7 @@ public class DatabaseConnection
 		// Select stock# and quantity from Orders where orderNum
 		conn = DriverManager.getConnection(strConn,strUsername,strPassword);
 		Statement stmt = conn.createStatement();
-		ResultSet rs = stmt.executeQuery("SELECT stockNum,quantity FROM Orders WHERE orderNum = " + orderNum);
+		ResultSet rs = stmt.executeQuery("SELECT stockNum,quantity FROM History WHERE orderNum = " + orderNum);
 		
 		// for ea in rs update inventory quantity -= quantity where stock#
 		while(rs.next())
@@ -463,6 +464,7 @@ public class DatabaseConnection
 		String manufacturer=null;
 		String modelNum=null; 
 		String priceString=null;
+		String accessories=null;
 		double price=-1.0; 
 		String warrantyString=null;
 		int warranty=-1;
@@ -480,6 +482,11 @@ public class DatabaseConnection
 		priceString=reader.nextLine();
 		System.out.print("Warranty: ");
 		warrantyString=reader.nextLine();
+		System.out.print("Accessories? (y/n) ");
+		accessories=reader.nextLine();
+		
+		//TODO: Descriptions
+		
 
 		//Create query
 		String query="SELECT * FROM Catalog WHERE ";
@@ -519,15 +526,23 @@ public class DatabaseConnection
 		 //int i=0;
 		 while(rs.next())
 		 {	 //System.out.print(i + ": ");
-			 System.out.print(rs.getString(1) + " ");
+			 String tempStock=rs.getString(1);
+			 System.out.print(tempStock + " ");
 			 System.out.print(rs.getString(2) + " ");
 			 System.out.print(rs.getString(3) + " ");
 			 System.out.print(rs.getString(4) + " ");
 			 System.out.print(rs.getFloat(5) + " 	");
 			 System.out.println(rs.getInt(6) + " ");
+			 
+			 if(accessories.equals("y")){
+				 System.out.println("Accessories of " + tempStock + ":");
+				 searchAccessory(tempStock);
+				 System.out.println("End of Accessories of " + tempStock);
+			 }
 			 //i++;
 			 
 		 }
+		 System.out.println("");
 		 rs.close();
 		 stmt.close();
 		 conn.close();
@@ -785,7 +800,7 @@ public class DatabaseConnection
 		 conn.close();
 	}
 	public static void checkout(String cID) throws SQLException 
-	{
+	{	//TODO: Test if no items in cart
 		double subtotal=0;
 		double discount=0;
 		double shipping=0;
@@ -801,7 +816,7 @@ public class DatabaseConnection
 		Statement s = conn.createStatement();
 		
 		int orderNum=getNewOrderNum();
-		String mydate=getDate();
+		//String mydate=getDate();
 		
 		
 		//Get subtotal
@@ -813,7 +828,7 @@ public class DatabaseConnection
 			tprice=rs.getDouble(4);
 			//TODO: Check availability before checkout in addCart from eDepot???
 			System.out.println("eDepot: Check availability of product " + stockNum + " with quantity " + quantity);
-			PreparedStatement p = conn.prepareStatement("INSERT INTO History VALUES(" + orderNum +", '"+ cID +"', '"+ mydate + "', '" + stockNum + "', " + quantity + ", " + tprice +")");
+			PreparedStatement p = conn.prepareStatement("INSERT INTO History VALUES(" + orderNum +", '"+ cID +"', '" + stockNum + "', " + quantity + ", " + tprice +")");
 			p.executeUpdate();
 			p.close();
 			subtotal+=tprice; 
@@ -832,6 +847,11 @@ public class DatabaseConnection
 		totalcost=subtotal-discount+shipping;
 		System.out.println("Total Cost: " + totalcost);
 		
+		//Insert in Total table
+		PreparedStatement updateTotal = conn.prepareStatement("INSERT INTO Total VALUES(" + orderNum + ", '" + cID + "', CURRENT_TIMESTAMP, " + totalcost + ")");
+		updateTotal.executeUpdate();
+		updateTotal.close();
+		
 		//Remove from cart
 		PreparedStatement removeCart = conn.prepareStatement("DELETE Cart WHERE cID='" + cID + "'");
 		removeCart.executeUpdate();
@@ -839,7 +859,7 @@ public class DatabaseConnection
 		
 		//Update customer number of purchases, purchase (0, 1, 2), and status
 		//TODO: SHOULD PRICES FOR STATUS BE DETERMINED FROM SUBTOTAL OR TOTAL COST????
-		updateCustomer(cID, totalcost);
+		updateCustomer(cID);
 		
 		//TODO: SEND SHIPPING NOTICE TO EDEPOT???
 
@@ -937,17 +957,29 @@ public class DatabaseConnection
 	}
 	
 	//Updates customer purchases and status
-	public static void updateCustomer(String cID, Double purchase) throws SQLException {
+	public static void updateCustomer(String cID) throws SQLException {
 		conn = DriverManager.getConnection(strConn,strUsername,strPassword);
 		Statement s = conn.createStatement();
 		
 		//Customer values
-		int numP=0;
-		int lastPurchase=0;
-		double p0=0;
-		double p1=0;
-		double p2=0;
 		double total=0;
+		String status=null;
+		
+		ResultSet rs = s.executeQuery("SELECT total FROM Total WHERE cID ='" + cID + "' ORDER BY dop DESC");
+		
+		int i=0;
+		while(rs.next())
+		{
+			if(i==3)
+				break;
+			total+=rs.getInt(1);
+			i++;
+		}
+		status=getNewStatus(total);
+		s=conn.createStatement();
+		s.executeUpdate("UPDATE Customer SET status='" + status + "' WHERE cID='" + cID + "'");
+		
+		/*
 		
 		//Status values
 		String status="Green";
@@ -986,6 +1018,7 @@ public class DatabaseConnection
 		else{
 			System.out.println("ERROR: Customer doesn't exist!!!");
 		}
+		*/
 		rs.close();
 		s.close();
 		conn.close();
@@ -1065,5 +1098,64 @@ public class DatabaseConnection
 		int year = calendar.get(Calendar.YEAR);
 		String myString = day + "-" + month + "-" + year;
 		return myString;
+	}
+	
+	public static void deleteOld() throws SQLException
+	{
+		conn = DriverManager.getConnection(strConn,strUsername,strPassword);
+		Statement stmt = conn.createStatement();
+		ResultSet rs = stmt.executeQuery("SELECT cID FROM Total GROUP BY cID HAVING COUNT(*) > 2");
+		while(rs.next())
+		{
+			String cID = rs.getString(1);
+			stmt = conn.createStatement();
+			ResultSet rs2 = stmt.executeQuery("SELECT orderNum FROM Total WHERE cID = '" + cID + "' ORDER BY dop DESC");
+			int i = 0;
+			while(rs2.next())
+			{
+				int orderNum = rs2.getInt(1);
+				if(i > 2)
+				{
+					stmt.executeUpdate("DELETE FROM Total WHERE orderNum =" + orderNum);
+					stmt.executeUpdate("DELETE FROM History WHERE orderNum =" + orderNum);
+				}
+				i++;
+			}
+			rs2.close();
+		}		
+		rs.close();
+		stmt.close();
+		conn.close();
+	}
+	
+	public static void printSummary() throws SQLException
+	{
+		conn = DriverManager.getConnection(strConn,strUsername,strPassword);
+		Statement stmt = conn.createStatement();
+		ResultSet rs = stmt.executeQuery("SELECT stockNum FROM Catalog");
+		System.out.println("1");
+		while(rs.next())
+		{
+			System.out.println("2");
+
+			String cID = rs.getString(1);
+			stmt = conn.createStatement();
+			ResultSet rs2 = stmt.executeQuery("SELECT orderNum FROM Total WHERE cID = '" + cID + "' ORDER BY dop DESC");
+			int i = 0;
+			while(rs2.next())
+			{
+				int orderNum = rs2.getInt(1);
+				if(i > 2)
+				{
+					stmt.executeUpdate("DELETE FROM Total WHERE orderNum =" + orderNum);
+					stmt.executeUpdate("DELETE FROM History WHERE orderNum =" + orderNum);
+				}
+				i++;
+			}
+			rs2.close();
+		}		
+		rs.close();
+		stmt.close();
+		conn.close();
 	}
 }
