@@ -79,7 +79,7 @@ public class DatabaseConnection
 	//search();
 	//custMenu("sarrafGUY");
 	//deleteOld();
-	printSummary();
+	search();
 	}
 		
 	public static void custMenu(String cID) throws SQLException
@@ -468,6 +468,8 @@ public class DatabaseConnection
 		double price=-1.0; 
 		String warrantyString=null;
 		int warranty=-1;
+		String description;
+		String dvalue=null;
 		
 		//Read values
 		System.out.print("Stock Number: ");
@@ -484,6 +486,14 @@ public class DatabaseConnection
 		warrantyString=reader.nextLine();
 		System.out.print("Accessories? (y/n) ");
 		accessories=reader.nextLine();
+		System.out.print("Description attribute: ");
+		description=reader.nextLine();
+		if(description.trim().length() != 0)
+		{
+			System.out.print("Description attribute value: ");
+			dvalue=reader.nextLine();
+		}
+		
 		
 		//TODO: Descriptions
 		
@@ -515,6 +525,10 @@ public class DatabaseConnection
 		{
 			warranty = Integer.parseInt(warrantyString);
 			query+="warranty=" + warranty + " AND ";
+		}
+		if(description.trim().length() != 0)
+		{
+			query+="stockNum IN (SELECT stockNum FROM Description WHERE attribute='" + description + "' AND value='" + dvalue + "') AND ";
 		}
 		query+="1=1";
 		
