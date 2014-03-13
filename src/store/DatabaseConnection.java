@@ -78,8 +78,8 @@ public class DatabaseConnection
 	//searchStockNumAndCategoryAndModelNum("AA00001", "phone", "a02");
 	//search();
 	//custMenu("sarrafGUY");
-	deleteOld();
-	
+	//deleteOld();
+	printSummary();
 	}
 		
 	public static void custMenu(String cID) throws SQLException
@@ -1129,33 +1129,98 @@ public class DatabaseConnection
 	}
 	
 	public static void printSummary() throws SQLException
-	{
+	{	
+		System.out.print("Month (January=01): ");
+		String month=reader.nextLine();
+		System.out.print("Year: ");
+		String year=reader.nextLine();
+		
+		int lastDay=getLastDay(Integer.parseInt(month));
+		
+		//Get product quantities and sales
 		conn = DriverManager.getConnection(strConn,strUsername,strPassword);
 		Statement stmt = conn.createStatement();
 		ResultSet rs = stmt.executeQuery("SELECT stockNum FROM Catalog");
-		System.out.println("1");
+		System.out.println("Summary\n");
+		System.out.println("StockNum 	Quantity	Total Sale");
+		
 		while(rs.next())
 		{
-			System.out.println("2");
-
-			String cID = rs.getString(1);
+			int quantity=0;
+			double total=0;
+			String stockNum = rs.getString(1);
 			stmt = conn.createStatement();
-			ResultSet rs2 = stmt.executeQuery("SELECT orderNum FROM Total WHERE cID = '" + cID + "' ORDER BY dop DESC");
-			int i = 0;
-			while(rs2.next())
+			ResultSet rs2 = stmt.executeQuery("SELECT SUM(quantity),SUM(tprice) FROM History,Total WHERE stockNum='" + stockNum + "' AND Total.orderNum=History.orderNum AND dop >= TO_TIMESTAMP('" + year + "-" + month + "-01 00:00:00','yyyy-mm-dd hh24:mi:ss') and dop <= TO_TIMESTAMP('" + year + "-" + month + "-" + lastDay + " 23:59:59', 'yyyy-mm-dd hh24:mi:ss')");
+			if(rs2.next())
 			{
-				int orderNum = rs2.getInt(1);
-				if(i > 2)
-				{
-					stmt.executeUpdate("DELETE FROM Total WHERE orderNum =" + orderNum);
-					stmt.executeUpdate("DELETE FROM History WHERE orderNum =" + orderNum);
-				}
-				i++;
+				quantity=rs2.getInt(1);
+				total=rs2.getDouble(2);
 			}
+			System.out.print(stockNum + "		");
+			System.out.print(quantity + "		");
+			System.out.println(total + "	");
 			rs2.close();
 		}		
+		System.out.println("");
 		rs.close();
+		
+		//Get category quantities and sales
+		stmt = conn.createStatement();
+		ResultSet rs3 = stmt.executeQuery("SELECT DISTINCT category FROM Catalog");
+		System.out.println("Category 	Quantity	Total Sale");
+		
+		while(rs3.next())
+		{
+			int quantity=0;
+			double total=0;
+			String category = rs3.getString(1);
+			stmt = conn.createStatement();
+			ResultSet rs4 = stmt.executeQuery("SELECT SUM(quantity),SUM(tprice) FROM History,Total WHERE stockNum IN (SELECT stockNum FROM Catalog WHERE category='" + category + "') AND Total.orderNum=History.orderNum AND dop >= TO_TIMESTAMP('" + year + "-" + month + "-01 00:00:00','yyyy-mm-dd hh24:mi:ss') and dop <= TO_TIMESTAMP('" + year + "-" + month + "-" + lastDay + " 23:59:59', 'yyyy-mm-dd hh24:mi:ss')");
+			if(rs4.next())
+			{
+				quantity=rs4.getInt(1);
+				total=rs4.getDouble(2);
+			}
+			System.out.print(category + "	");
+			System.out.print(quantity + "		");
+			System.out.println(total + "	");
+			rs4.close();
+		}
+		System.out.println("");
+		rs3.close();
+		
+		//Get best customer
+		stmt = conn.createStatement();
+		ResultSet rs5 = stmt.executeQuery("WITH mytable AS (select distinct cID,SUM(total) as totalSum FROM Total WHERE dop >= TO_TIMESTAMP('" + year + "-" + month + "-01 00:00:00','yyyy-mm-dd hh24:mi:ss') and dop <= TO_TIMESTAMP('" + year + "-" + month + "-" + lastDay + " 23:59:59', 'yyyy-mm-dd hh24:mi:ss') GROUP BY cID) SELECT cID FROM mytable WHERE totalSum=(SELECT MAX(totalSum) from mytable)");
+		if(rs5.next()){
+			String bestCustomer=rs5.getString(1);
+			System.out.println("Customer who purchased most: " + bestCustomer);
+		}
+		else
+		{
+			System.out.println("No sales this month! No best customer!");
+		}
 		stmt.close();
 		conn.close();
 	}
+	private static int getLastDay(int month) {
+		
+		switch(month)
+	    {
+	    case 1: return 31;
+	    case 2: return 28;
+	    case 3: return 31;
+	    case 4: return 30;
+	    case 5: return 31;
+	    case 6: return 30;
+	    case 7: return 31;
+	    case 8: return 31;
+	    case 9: return 30;
+	    case 10: return 31;
+	    case 11: return 30;
+	    case 12: return 31;
+	    }
+	    return -1;
+	}
+	
 }
